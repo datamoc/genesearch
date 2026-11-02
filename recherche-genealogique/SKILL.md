@@ -2,6 +2,8 @@
 name: recherche-genealogique
 description: Genealogy and family-history research with proof levels (A record read, B notice or tree, C deduction), named sources and human help for hard-to-read records. Use when the user researches ancestors, a person's death, spouse or children, verifies a record or an AI answer that looks unsourced, backs up, imports or rebuilds a family tree (Geneanet, GEDCOM), asks "what do we do today?", wants to prove facts, go back a branch, find missing people, spot patterns in occupations or places, estimate kinship, or look for the heirs of an estate. / Enquête généalogique (état civil, actes, recensements, hypothèques, presse, Léonore, Geneanet, Gallica, archives, arbre, GEDCOM, sauvegarde, preuves, parenté, recherche d'héritiers, succession, dévolution). Répondre dans la langue de l'utilisateur.
 license: MIT
+metadata:
+  version: "0.1.0"
 compatibility: Fonctionne avec tout assistant IA (conversation seule, document partagé, poste de travail). Facultatif - navigateur piloté, exécution de Python 3.8+ (scripts à bibliothèque standard, reportlab pour le PDF).
 ---
 

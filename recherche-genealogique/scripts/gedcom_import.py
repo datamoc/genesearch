@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Importe un fichier GEDCOM (export Geneanet, Heredis, etc.) dans la base d'enquête.
+"""Import a GEDCOM file (Geneanet, Heredis, ... export) into the investigation database.
 
-Usage : python gedcom_import.py arbre.ged enquete.db [--label "Arbre Famille X, export du 2026-11-02"]
-Stdlib uniquement. Les personnes, événements (naissance, décès, mariage, etc.) et
-relations (époux, parent) sont créés ; chaque événement est rattaché à une source
-« import GEDCOM » de niveau B (transcription d'un arbre, pas un acte vu).
+Usage: python gedcom_import.py tree.ged investigation.db [--label "..."]. Run without arguments for the
+help in the chosen language. Every imported fact is level B (a tree, not a record seen).
 """
 import re
 import sqlite3
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+import i18n  # noqa: E402
+from i18n import tr  # noqa: E402
 
 EVENT_KINDS = {
     "BIRT": "naissance", "CHR": "baptême", "DEAT": "décès", "BURI": "inhumation",
@@ -60,14 +62,14 @@ def event_row(node):
 
 
 def main() -> int:
-    args = sys.argv[1:]
+    args = i18n.init(sys.argv[1:])
     label = "Import GEDCOM"
     if "--label" in args:
         i = args.index("--label")
         label = args[i + 1]
         del args[i:i + 2]
     if len(args) != 2:
-        print(__doc__, file=sys.stderr)
+        print(tr("imp.help"), file=sys.stderr)
         return 2
     ged_path, db_path = Path(args[0]), Path(args[1])
     records = parse_records(read_text(ged_path))
@@ -130,8 +132,7 @@ def main() -> int:
 
     conn.commit()
     conn.close()
-    print(f"Importé : {len(person_ids)} personnes, {n_events} événements, {n_rel} relations "
-          f"depuis {ged_path.name} (source n°{source_id}, niveau B).")
+    print(tr("imp.done", persons=len(person_ids), events=n_events, rels=n_rel, file=ged_path.name, source=source_id))
     return 0
 
 

@@ -1,25 +1,33 @@
 #!/usr/bin/env python3
-"""Crée (ou complète) la base SQLite d'une enquête généalogique.
+"""Create (or complete) the SQLite database of a genealogy investigation.
 
-Usage : python init_db.py enquete.db
-Aucune dépendance : bibliothèque standard uniquement.
+Usage: python init_db.py investigation.db
+Standard library only.
 """
 import sqlite3
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+import i18n  # noqa: E402
+from i18n import tr  # noqa: E402
+
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("Usage : python init_db.py <chemin.db>", file=sys.stderr)
+    args = i18n.init(sys.argv[1:])
+    if args and args[0] in ("-h", "--help"):
+        print(tr("init.usage"))
+        return 0
+    if len(args) != 1:
+        print(tr("init.usage"), file=sys.stderr)
         return 2
-    db_path = Path(sys.argv[1])
+    db_path = Path(args[0])
     schema = (Path(__file__).parent / "schema.sql").read_text(encoding="utf-8")
     with sqlite3.connect(db_path) as conn:
         conn.executescript(schema)
         tables = [r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
-    print(f"Base prête : {db_path} ({len(tables)} tables : {', '.join(tables)})")
+    print(tr("init.ready", db=db_path, n=len(tables), names=", ".join(tables)))
     return 0
 
 

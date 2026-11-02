@@ -1,8 +1,8 @@
 # Recherche généalogique assistée : consignes pour un assistant IA
 
-Ce dossier contient une méthode de recherche généalogique et des outils. Il fonctionne avec n'importe quel assistant IA (Claude, ChatGPT, Gemini, Copilot, Mistral, modèle local, agent de code) ; il suffit de lire les fichiers ci-dessous. Si ton outil lit un fichier `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` ou le format `SKILL.md`, ce dossier est déjà au bon format ; sinon, copie le contenu de `PROMPT-UNIVERSEL.md` (français) ou `PROMPT-UNIVERSAL.en.md` (anglais) dans les instructions de l'assistant.
+Ce dossier contient une méthode de recherche généalogique et des outils. Il fonctionne avec n'importe quel assistant IA (Claude, ChatGPT, Gemini, Copilot, Mistral, modèle local, agent de code) ; il suffit de lire les fichiers ci-dessous. Si ton outil lit un fichier `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` ou le format `SKILL.md`, ce dossier est déjà au bon format ; sinon, copie le contenu de `PROMPT-UNIVERSEL.md` (français), `PROMPT-UNIVERSAL.en.md` (anglais) ou `PROMPT-UNIVERSAL.de.md` (allemand) dans les instructions de l'assistant.
 
-**Language:** always answer in the user's language. The references are in French except `references/sources-international.md` (English: entry points for other countries). Quote records in their original language and translate them.
+**Language:** always answer in the user's language. The references are in French except `references/sources-international.md` (English: entry points for other countries). Quote records in their original language and translate them. The scripts speak French, English and German: pass `--lang fr|en|de` (or set `GENEALOGIE_LANG`) to match the user's language; `TRANSLATING.md` explains how to add another one.
 
 ## Lis dans cet ordre
 

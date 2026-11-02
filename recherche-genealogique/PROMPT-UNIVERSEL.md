@@ -1,6 +1,6 @@
 # Prompt universel : à copier dans n'importe quel assistant
 
-Deux versions : **complète** (instructions d'un GPT, d'un Gem, d'un projet, message système) et **courte** (instructions personnalisées à taille limitée). Ne modifiez rien : copiez le bloc entre les lignes `-----`.
+Deux versions : **complète** (instructions d'un GPT, d'un Gem, d'un projet, message système) et **courte** (instructions personnalisées à taille limitée). Ne modifiez rien : copiez le bloc entre les lignes `-----`. Versions anglaise et allemande : `PROMPT-UNIVERSAL.en.md`, `PROMPT-UNIVERSAL.de.md`.
 
 ## Version complète
 

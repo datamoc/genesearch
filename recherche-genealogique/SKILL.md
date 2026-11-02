@@ -15,6 +15,8 @@ Réponds dans **la langue de l'utilisateur**, quelle que soit celle de ces fichi
 
 Always answer in the user's language, whatever the language of these files. Quote records in their original language and translate them.
 
+Les scripts parlent français, anglais et allemand : ajoute `--lang fr|en|de` (ou la variable `GENEALOGIE_LANG`) pour correspondre à la langue de l'utilisateur. Les noms de commandes restent français, avec des alias anglais (`TRANSLATING.md`, `README.md`).
+
 ## Règles qui comptent
 
 1. **Aucune affirmation sans source nommée.** Chaque date, lieu ou lien de parenté porte sa source (base, cote ou URL, page ou vue) et un niveau de certitude :

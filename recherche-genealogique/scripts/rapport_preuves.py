@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
-"""Rapport de preuves et de questions ouvertes, en PDF (ou HTML sans dépendance).
+"""Report of proofs and open questions, as PDF (or dependency-free HTML).
 
-Usage : python rapport_preuves.py <base.db> <sortie.pdf> [--titre "…"] [--tout] [--html]
-
-Contenu : preuves (niveau A), faits incertains (C et douteux), pistes encore non prouvées (journal
-de recherche), questions ouvertes (aides demandées, incohérences), légende des niveaux.
-
-Vie privée : par défaut, les personnes probablement vivantes sont exclues du document : née il y a moins de
-100 ans sans décès connu, ou sans aucune date mais parent, enfant ou conjoint d'une telle personne. Toute ligne
-(preuve, journal, question, incohérence) qui nomme une de ces personnes, sous une forme ou une autre (casse,
-accents, ordre prénom-nom), est retirée et simplement comptée. Le masquage est volontairement prudent : un
-homonyme historique peut être retiré aussi. `--tout` désactive ce masquage
-(document à garder en local). PDF : bibliothèque `reportlab` (pip install reportlab) ; sans elle, ou avec
-`--html`, le script écrit une page HTML imprimable en PDF depuis un navigateur.
+Usage: python rapport_preuves.py <db> <output.pdf> [--titre "..."] [--tout] [--html]. Run with --help for the full
+text in the chosen language. Living people are excluded by default; see the help text.
 """
 import html
 import re
@@ -22,10 +12,20 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+import i18n  # noqa: E402
 from analyse_arbre import Tree, cmd_anomalies, quiet  # noqa: E402
+from i18n import tr  # noqa: E402
 
-LEVELS = [("A", "acte lu (par la personne indiquée)"), ("B", "notice, arbre ou transcription : pas d'acte vu"),
-          ("C", "déduction ou lecture incertaine"), ("B−", "extrait de moteur, page non lue")]
+
+
+def levels():
+    return [("A", tr("rep.level.A")), ("B", tr("rep.level.B")), ("C", tr("rep.level.C")), ("B−", tr("rep.level.Bm"))]
+
+
+def status_label(status):
+    """Translate the stored status of a help request (stored in French: ouverte, faite)."""
+    label = tr(f"rep.status.{status}")
+    return status if label == f"rep.status.{status}" else label
 
 
 def fold(text):
@@ -98,36 +98,49 @@ def collect(db_path, mask):
 
 
 def sections(d):
-    """Liste neutre (titre, [blocs]) partagée par le PDF et le HTML. Un bloc = ('p', texte) ou ('t', lignes)."""
+    """Neutral list (title, [blocks]) shared by the PDF and the HTML.
+    A block is ('p', text) or ('t', rows, layout) where layout names the PDF column widths."""
     A = [p for p in d["preuves"] if p["certainty"] == "A"]
     C = [p for p in d["preuves"] if p["certainty"] == "C"]
-    out = []
-    out.append(("Légende des niveaux de certitude", [("t", [["Niveau", "Signification"]] + [[k, v] for k, v in LEVELS])]))
+
     def hidden_note(kind, label):
         count = d["masques"][kind]
-        return [("p", f"Non détaillé : {count} {label} nommant des personnes vivantes.")] if count else []
+        return [("p", tr("rep.hidden", count=count, label=tr(label)))] if count else []
 
-    out.append(("Preuves : faits établis par un acte (niveau A)", ([(
-        "t", [["Fait", "Source", "Lecteur et notes"]] +
-        [[p["claim"], " ".join(x for x in (p["source"], p["ref"]) if x),
-          " ".join(x for x in (p["reader"], p["notes"]) if x)] for p in A])] if A else [("p", "Aucune preuve de niveau A pour l'instant.")])
-        + hidden_note("preuves", "fait(s)")))
-    out.append(("Faits incertains (niveau C, lectures douteuses)", [(
-        "t", [["Fait", "Source", "Pourquoi incertain"]] +
-        [[p["claim"], p["source"], p["notes"]] for p in C])] if C else [("p", "Aucun.")]))
-    out.append(("Pistes trouvées, non encore prouvées (journal de recherche)",
-                ([("t", [["Recherche", "Résultat", "Suite à donner"]] +
-                   [[f"{j['on']} · {j['base']} · {j['query']}", j["result"], j["next"]] for j in d["journal"]])]
-                 if d["journal"] else [("p", "Journal vide.")]) + hidden_note("journal", "entrée(s) du journal")))
+    out = [(tr("rep.sec.legend"),
+            [("t", [[tr("rep.col.level"), tr("rep.col.meaning")]] + [[k, v] for k, v in levels()], "legend")])]
+    if A:
+        proofs = [("t", [[tr("rep.col.fact"), tr("rep.col.source"), tr("rep.col.reader_notes")]] +
+                    [[p["claim"], " ".join(x for x in (p["source"], p["ref"]) if x),
+                      " ".join(x for x in (p["reader"], p["notes"]) if x)] for p in A], None)]
+    else:
+        proofs = [("p", tr("rep.none.proofs"))]
+    out.append((tr("rep.sec.proofs"), proofs + hidden_note("preuves", "rep.hidden.facts")))
+    if C:
+        uncertain = [("t", [[tr("rep.col.fact"), tr("rep.col.source"), tr("rep.col.why_uncertain")]] +
+                      [[p["claim"], p["source"], p["notes"]] for p in C], None)]
+    else:
+        uncertain = [("p", tr("rep.none.generic"))]
+    out.append((tr("rep.sec.uncertain"), uncertain))
+    if d["journal"]:
+        leads = [("t", [[tr("rep.col.search"), tr("rep.col.result"), tr("rep.col.next")]] +
+                  [[f"{j['on']} · {j['base']} · {j['query']}", j["result"], j["next"]] for j in d["journal"]],
+                  "journal")]
+    else:
+        leads = [("p", tr("rep.none.log"))]
+    out.append((tr("rep.sec.leads"), leads + hidden_note("journal", "rep.hidden.log")))
     open_help = [a for a in d["aides"] if a["status"] == "ouverte"]
-    qs = [["Question ou demande d'aide", "Statut"]] + [[a["request"], a["status"]] for a in d["aides"]]
-    blocks = [("t", qs)] if d["aides"] else [("p", "Aucune demande d'aide enregistrée.")]
-    blocks += hidden_note("aides", "question(s)")
+    if d["aides"]:
+        blocks = [("t", [[tr("rep.col.question"), tr("rep.col.status")]] +
+                    [[a["request"], status_label(a["status"])] for a in d["aides"]], "questions")]
+    else:
+        blocks = [("p", tr("rep.none.help"))]
+    blocks += hidden_note("aides", "rep.hidden.questions")
     if d["anomalies"]:
-        blocks += [("p", "Incohérences repérées dans l'arbre, à vérifier dans les actes :"),
-                   ("t", [["Incohérence"]] + [[a] for a in d["anomalies"]])]
-    blocks += hidden_note("anomalies", "incohérence(s)")
-    out.append((f"Questions ouvertes ({len(open_help)} demande(s) d'aide en attente)", blocks))
+        blocks += [("p", tr("rep.anom.intro")),
+                   ("t", [[tr("rep.col.anomaly")]] + [[a] for a in d["anomalies"]], None)]
+    blocks += hidden_note("anomalies", "rep.hidden.anomalies")
+    out.append((tr("rep.sec.questions", n=len(open_help)), blocks))
     return out
 
 
@@ -136,7 +149,7 @@ def write_html(d, path, titre):
     body = []
     for title, blocks in sections(d):
         body.append(f"<h2>{esc(title)}</h2>")
-        for kind, val in blocks:
+        for kind, val, *_layout in blocks:
             if kind == "p":
                 body.append(f"<p>{esc(val)}</p>")
             else:
@@ -147,8 +160,8 @@ def write_html(d, path, titre):
         f"<!doctype html><meta charset='utf-8'><title>{esc(titre)}</title>"
         "<style>body{font:14px/1.4 sans-serif;max-width:900px;margin:24px auto}table{border-collapse:collapse;width:100%}"
         "td,th{border:1px solid #ccc;padding:5px;vertical-align:top;text-align:left}th{background:#eee}</style>"
-        f"<h1>{esc(titre)}</h1><p>{date.today().isoformat()} · {d['n_personnes']} personnes dans la base"
-        f"{' · ' + str(d['n_masquees']) + ' personnes vivantes masquées' if d['n_masquees'] else ''}</p>" + "".join(body),
+        f"<h1>{esc(titre)}</h1><p>{tr('rep.meta', date=date.today().isoformat(), n=d['n_personnes'])}"
+        f"{tr('rep.meta.masked', n=d['n_masquees']) if d['n_masquees'] else ''}</p>" + "".join(body),
         encoding="utf-8")
 
 
@@ -168,20 +181,20 @@ def write_pdf(d, path, titre):
         canvas.saveState()
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillGray(0.4)
-        canvas.drawString(18 * mm, 10 * mm, f"{titre} · généré le {date.today().isoformat()} · données personnelles, à garder en local")
-        canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, f"page {doc.page}")
+        canvas.drawString(18 * mm, 10 * mm, tr("rep.footer", title=titre, date=date.today().isoformat()))
+        canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, tr("rep.page", n=doc.page))
         canvas.restoreState()
 
     doc = SimpleDocTemplate(str(path), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
                             topMargin=16 * mm, bottomMargin=18 * mm, title=titre)
     flow = [Paragraph(esc(titre), ss["Title"]),
-            Paragraph(f"{date.today().isoformat()} · {d['n_personnes']} personnes dans la base · preuves par niveau : "
-                      f"{', '.join(f'{k} {v}' for k, v in sorted(d['niveaux'].items()))}"
-                      + (f" · {d['n_masquees']} personnes vivantes masquées" if d["n_masquees"] else ""), ss["BodyText"]),
+            Paragraph(tr("rep.pdf.intro", date=date.today().isoformat(), n=d["n_personnes"],
+                         levels=", ".join(f"{k} {v}" for k, v in sorted(d["niveaux"].items())))
+                      + (tr("rep.meta.masked", n=d["n_masquees"]) if d["n_masquees"] else ""), ss["BodyText"]),
             Spacer(1, 6)]
     for title, blocks in sections(d):
         flow.append(Paragraph(esc(title), ss["Heading2"]))
-        for kind, val in blocks:
+        for kind, val, *layout in blocks:
             if kind == "p":
                 flow.append(Paragraph(esc(val), ss["BodyText"]))
                 continue
@@ -191,11 +204,11 @@ def write_pdf(d, path, titre):
                    [[Paragraph(esc(c), cell) for c in r] for r in rows]
             width = A4[0] - 36 * mm
             widths = {1: [width], 2: [width * .22, width * .78], 3: [width * .38, width * .34, width * .28]}[ncol]
-            if ncol == 3 and header[0].startswith("Recherche"):
+            if layout and layout[0] == "journal":
                 widths = [width * .28, width * .45, width * .27]
-            if ncol == 2 and header[0].startswith("Question"):
+            elif layout and layout[0] == "questions":
                 widths = [width * .84, width * .16]
-            if ncol == 2 and header[0] == "Niveau":
+            elif layout and layout[0] == "legend":
                 widths = [width * .12, width * .88]
             t = Table(data, colWidths=widths, repeatRows=1)
             t.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f5d50")),
@@ -207,11 +220,11 @@ def write_pdf(d, path, titre):
 
 
 def main():
-    args = sys.argv[1:]
+    args = i18n.init(sys.argv[1:])
     if len(args) < 2 or args[0] in ("-h", "--help"):
-        print(__doc__)
+        print(tr("rep.help"))
         return 0 if args else 2
-    titre = "Rapport de preuves et de questions ouvertes"
+    titre = tr("rep.default_title")
     if "--titre" in args:
         i = args.index("--titre")
         titre = args[i + 1]
@@ -224,14 +237,14 @@ def main():
     if not want_html:
         try:
             write_pdf(d, out, titre)
-            print(f"PDF écrit : {out} ({d['n_masquees']} personnes vivantes masquées)" if mask else f"PDF écrit : {out} (sans masquage)")
+            print(tr("rep.pdf.written", out=out, n=d["n_masquees"]) if mask else tr("rep.pdf.written_nomask", out=out))
             return 0
         except ImportError:
-            print("reportlab absent : `pip install reportlab`, ou relancer avec --html (page à imprimer en PDF).", file=sys.stderr)
+            print(tr("rep.no_reportlab"), file=sys.stderr)
             want_html = True
             out = out.with_suffix(".html")
     write_html(d, out, titre)
-    print(f"HTML écrit : {out}")
+    print(tr("rep.html.written", out=out))
     return 0
 
 

@@ -58,4 +58,5 @@ Tous les scripts se lancent à la main, sans IA (`README.md`). L'interface de va
 
 - Aucune étape ne dépend d'un script : la base et l'OCR sont des plus, pas des prérequis.
 - Les comptes payants ne sont utilisés que dans la session de navigateur déjà connectée de l'utilisateur.
-- Réponds dans la langue de l'utilisateur ; les sources et les règles de ce guide sont rédigées pour la France et l'Europe francophone, adapte les sites pour un autre pays (`sites-utiles.md`).
+- Réponds dans la langue de l'utilisateur ; les sources et les règles de ce guide sont rédigées pour la France et l'Europe francophone, adapte les sites pour un autre pays (`sites-utiles.md`, `sources-international.md`).
+- Les scripts parlent français, anglais et allemand : `--lang fr|en|de` ou la variable `GENEALOGIE_LANG` (langue du système, puis français, par défaut). Les noms de commandes restent français, avec des alias anglais (`analyze`, `validate`, `report`...).

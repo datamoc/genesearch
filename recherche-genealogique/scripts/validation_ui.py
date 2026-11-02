@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Interface locale de validation des preuves (navigateur, sur ce poste uniquement).
+"""Local interface to validate proofs (in the browser, on this machine only).
 
-Usage : python validation_ui.py <base.db> [--racine "Nom ou n°"] [--port 8765] [--lecteur "Prénom"]
-
-Une fiche par personne : naissance, mariage, décès, avec le niveau de certitude actuel.
-Pour chaque fait, un clic : A (acte lu), B (notice, pas d'acte), C (déduction), ? (douteux).
-Champ « cote / où lu » facultatif. Les fiches se parcourent des ancêtres les plus proches de la racine
-vers les plus lointains. Les résultats sont écrits dans la table `evidence` de la base.
-
-Sécurité : le serveur écoute seulement 127.0.0.1 et exige un jeton aléatoire (affiché au lancement).
-Les données ne quittent pas le poste. Stdlib uniquement.
+Usage: python validation_ui.py <db> [--racine "Name or no."] [--port 8765] [--lecteur "First name"].
+Run with --help for the full text in the chosen language. The server listens on 127.0.0.1 only and
+requires a random token (shown at launch); data never leaves the machine. Standard library only.
 """
+import html
 import json
 import secrets
 import sqlite3
@@ -23,11 +18,30 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, str(Path(__file__).parent))
+import i18n  # noqa: E402
 from analyse_arbre import Tree  # noqa: E402
+from i18n import tr  # noqa: E402
 
 KINDS = ("naissance", "baptême", "mariage", "décès", "inhumation")
-PAGE = r"""<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Validation des preuves</title>
+UI_KEYS = ("title", "loading", "stop", "stop_tip", "stat", "reader_none", "end_of_batch", "see_summary", "card_meta",
+           "date_unknown", "place_unknown", "current", "title_A", "title_B", "title_C", "title_D", "cote_placeholder",
+           "all_A", "save_next", "skip", "change_reader", "who_prompt", "save_error", "stopped_title", "stopped_text",
+           "row_reviewed", "row_A", "row_B", "row_C", "row_doubt", "row_left", "resume", "quit_server", "server_stopped")
+
+
+def kind_label(kind):
+    label = tr(f"kind.{kind}")
+    return kind if label == f"kind.{kind}" else label
+
+
+def render_page(reader):
+    """The page in the current language: the texts of the browser interface are sent as a JSON object."""
+    texts = {key: tr(f"ui.js.{key}") for key in UI_KEYS}
+    texts_json = json.dumps(texts, ensure_ascii=False).replace("</", "<\\/")
+    return (PAGE.replace("__LANG__", i18n.current()).replace("__TITLE__", html.escape(texts["title"]))
+            .replace("__I18N__", texts_json).replace("__LECTEUR__", json.dumps(reader)))
+PAGE = r"""<!doctype html><html lang="__LANG__"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>__TITLE__</title>
 <style>
 :root{--bg:#f6f4ef;--fg:#222;--card:#fff;--mut:#6b6b6b;--ln:#ddd;--a:#1e7d3a;--b:#8a6d00;--c:#1f5fa8;--d:#b3261e}
 @media (prefers-color-scheme:dark){:root{--bg:#1a1a1a;--fg:#eee;--card:#262626;--mut:#a0a0a0;--ln:#444;--a:#5bd17f;--b:#e3c04d;--c:#7db3f0;--d:#ff8a80}}
@@ -43,43 +57,47 @@ input.cote{width:100%;box-sizing:border-box;font:inherit;padding:6px;border:1px 
 .badge{font-size:.8rem;border:1px solid var(--ln);border-radius:20px;padding:1px 8px;color:var(--mut)}
 </style>
 <main>
-<h1>Validation des preuves</h1>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="mut" id="stat" style="flex:1">Chargement…</div><button id="stop" style="border-color:var(--d);color:var(--d)" title="Enregistre la fiche en cours et affiche le bilan">Arrêter</button></div>
+<h1 id="title"></h1>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="mut" id="stat" style="flex:1"></div><button id="stop" style="border-color:var(--d);color:var(--d)"></button></div>
 <div id="zone"></div>
 </main>
 <script>
+const L=__I18N__;
+const fmt=(s,v)=>s.replace(/\{(\w+)\}/g,(m,k)=>v[k]);
+document.getElementById("title").textContent=L.title;document.getElementById("stat").textContent=L.loading;
+const stopButton=document.getElementById("stop");stopButton.textContent=L.stop;stopButton.title=L.stop_tip;
 const T=new URLSearchParams(location.search).get("t");const R=new URLSearchParams(location.search).get("racine")||"";
 let queue=[],i=0,st={reste:0,valides:0},reader=localStorage.getItem("lecteur")||__LECTEUR__;
-function stat(){document.getElementById("stat").textContent=st.reste+" fiches à revoir · "+st.valides+" faits déjà revus · lecteur : "+(reader||"(à choisir : bouton en bas)")+" · toutes les données restent sur ce poste"}
+function stat(){document.getElementById("stat").textContent=fmt(L.stat,{left:st.reste,done:st.valides,reader:reader||L.reader_none})}
 const $=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,y]of Object.entries(a))x==="class"?e.className=y:e[x]=y;e.append(...k);return e};
 async function load(){const r=await fetch("/api/queue?t="+T+"&racine="+encodeURIComponent(R));const d=await r.json();queue=d.items;i=0;
  st={reste:d.reste,valides:d.valides};stat();render()}
 function render(){const z=document.getElementById("zone");z.replaceChildren();
- if(i>=queue.length){const e=$("div",{class:"card"},"Plus de fiche à revoir dans ce lot. ");const b=$("button",{class:"go"},"Voir le bilan");b.onclick=bilan;e.append(b);z.append(e);return}
+ if(i>=queue.length){const e=$("div",{class:"card"},L.end_of_batch);const b=$("button",{class:"go"},L.see_summary);b.onclick=bilan;e.append(b);z.append(e);return}
  const p=queue[i];const card=$("div",{class:"card"});
- card.append($("div",{class:"mut"},"Génération "+p.gen+" · fiche "+(i+1)+"/"+queue.length),$("h1",{},p.label),$("div",{class:"mut"},p.contexte));
+ card.append($("div",{class:"mut"},fmt(L.card_meta,{gen:p.gen,n:i+1,total:queue.length})),$("h1",{},p.label),$("div",{class:"mut"},p.contexte));
  const tb=$("table");p.faits.forEach(f=>{f.choix=null;const tr=$("tr");
-  tr.append($("td",{class:"k"},f.kind),$("td",{class:"v"},[f.date||"date ?",f.place||"lieu ?"].join(" · "),$("br"),$("span",{class:"badge"},"actuel : "+f.certainty)));
-  const td=$("td");["A","B","C","D"].forEach(l=>{const b=$("button",{class:l,title:{A:"acte lu",B:"notice / arbre, pas d'acte",C:"déduction",D:"douteux"}[l]},l==="D"?"?":l);
+  tr.append($("td",{class:"k"},f.kind_label),$("td",{class:"v"},[f.date||L.date_unknown,f.place||L.place_unknown].join(" · "),$("br"),$("span",{class:"badge"},fmt(L.current,{level:f.certainty}))));
+  const td=$("td");["A","B","C","D"].forEach(l=>{const b=$("button",{class:l,title:{A:L.title_A,B:L.title_B,C:L.title_C,D:L.title_D}[l]},l==="D"?"?":l);
    b.onclick=()=>{f.choix=l;td.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on")};td.append(b)});
-  f.cote=$("input",{class:"cote",placeholder:"cote / lien / où lu (facultatif)"});td.append($("br"),f.cote);tr.append(td);tb.append(tr)});
+  f.cote=$("input",{class:"cote",placeholder:L.cote_placeholder});td.append($("br"),f.cote);tr.append(td);tb.append(tr)});
  card.append(tb);const row=$("div",{class:"row"});
- const all=$("button",{},"Tout en A (actes lus)");all.onclick=()=>{card.querySelectorAll("td button.A").forEach(b=>b.click())};
- const save=$("button",{class:"go"},"Enregistrer et suivant");save.onclick=async()=>{if(await saveCard()){i++;render()}};
- const skip=$("button",{},"Passer");skip.onclick=()=>{i++;render()};
- const who=$("button",{},"Changer de lecteur");who.onclick=()=>{const n=prompt("Qui valide ?",reader);if(n){reader=n;localStorage.setItem("lecteur",n);stat()}};
+ const all=$("button",{},L.all_A);all.onclick=()=>{card.querySelectorAll("td button.A").forEach(b=>b.click())};
+ const save=$("button",{class:"go"},L.save_next);save.onclick=async()=>{if(await saveCard()){i++;render()}};
+ const skip=$("button",{},L.skip);skip.onclick=()=>{i++;render()};
+ const who=$("button",{},L.change_reader);who.onclick=()=>{const n=prompt(L.who_prompt,reader);if(n){reader=n;localStorage.setItem("lecteur",n);stat()}};
  row.append(all,save,skip,who);card.append(row);z.append(card)}
 async function saveCard(){const p=queue[i];if(!p)return true;
  const faits=p.faits.filter(f=>f.choix).map(f=>({event_id:f.event_id,evidence_id:f.evidence_id,claim:f.claim,certainty:f.choix,cote:f.cote.value}));
  if(!faits.length)return true;
- const r=await fetch("/api/save?t="+T,{method:"POST",body:JSON.stringify({reader,faits})});if(!r.ok){alert("Erreur d'enregistrement");return false}
+ const r=await fetch("/api/save?t="+T,{method:"POST",body:JSON.stringify({reader,faits})});if(!r.ok){alert(L.save_error);return false}
  st.valides+=faits.length;if(faits.length===p.faits.length)st.reste--;stat();return true}
 async function bilan(){const r=await fetch("/api/bilan?t="+T+"&racine="+encodeURIComponent(R));const d=await r.json();const z=document.getElementById("zone");z.replaceChildren();
- const c=$("div",{class:"card"});c.append($("h1",{},"Séance arrêtée"),$("p",{},"Tout ce qui a été enregistré est dans la base : rien n'est perdu si vous fermez cet onglet."));
- const t=$("table");[["Faits revus (tous niveaux)",d.revus],["dont A (acte lu)",d.A],["dont B (notice seulement)",d.B],["dont C (déduction)",d.C],["dont marqués douteux",d.douteux],["Fiches encore à revoir",d.reste]].forEach(([k,v])=>t.append($("tr",{},$("td",{},k),$("td",{},String(v)))));
+ const c=$("div",{class:"card"});c.append($("h1",{},L.stopped_title),$("p",{},L.stopped_text));
+ const t=$("table");[[L.row_reviewed,d.revus],[L.row_A,d.A],[L.row_B,d.B],[L.row_C,d.C],[L.row_doubt,d.douteux],[L.row_left,d.reste]].forEach(([k,v])=>t.append($("tr",{},$("td",{},k),$("td",{},String(v)))));
  c.append(t);const row=$("div",{class:"row"});
- const back=$("button",{class:"go"},"Reprendre");back.onclick=()=>load();
- const quit=$("button",{},"Quitter le serveur");quit.onclick=async()=>{await fetch("/api/stop?t="+T,{method:"POST"});z.replaceChildren($("div",{class:"card"},"Serveur arrêté. Vous pouvez fermer cet onglet. Pour reprendre : relancer validation_ui.py."));document.getElementById("stop").remove()};
+ const back=$("button",{class:"go"},L.resume);back.onclick=()=>load();
+ const quit=$("button",{},L.quit_server);quit.onclick=async()=>{await fetch("/api/stop?t="+T,{method:"POST"});z.replaceChildren($("div",{class:"card"},L.server_stopped));document.getElementById("stop").remove()};
  row.append(back,quit);c.append(row);z.append(c)}
 document.getElementById("stop").onclick=async()=>{if(await saveCard())await bilan()};
 load();
@@ -88,7 +106,7 @@ load();
 
 def make_handler(db_path, token, default_root, default_reader):
     tree = Tree(db_path)  # structure de l'arbre : chargée une fois
-    static_page = PAGE.replace("__LECTEUR__", json.dumps(default_reader))
+    static_page = render_page(default_reader)
 
     def conn():
         c = sqlite3.connect(db_path)
@@ -113,16 +131,17 @@ def make_handler(db_path, token, default_root, default_reader):
                 if not reviewed:
                     todo = True
                     faits.append({"event_id": e["eid"], "evidence_id": e["vid"], "kind": e["kind"],
-                                  "date": e["date"], "place": (e["place"] or "").replace("_", " "),
+                                  "kind_label": kind_label(e["kind"]), "date": e["date"],
+                                  "place": (e["place"] or "").replace("_", " "),
                                   "certainty": e["certainty"] or "B",
                                   "claim": f"{tree.name(pid)} : {e['kind']} {e['date'] or ''} {e['place'] or ''}".strip()})
             if todo:
                 reste += 1
                 par = [tree.name(x) for x in sorted(tree.parents[pid])]
                 sp = [tree.name(x) for x in sorted(tree.spouses[pid])]
-                ctx = " · ".join(filter(None, [("fils/fille de " + " et ".join(par)) if par else "",
-                                               ("conjoint(e) : " + ", ".join(sp)) if sp else ""]))
-                items.append({"label": tree.label(pid), "gen": g, "contexte": ctx or "aucun lien connu", "faits": faits})
+                ctx = " · ".join(filter(None, [tr("ui.ctx.parents", names=tr("ui.and").join(par)) if par else "",
+                                               tr("ui.ctx.spouses", names=", ".join(sp)) if sp else ""]))
+                items.append({"label": tree.label(pid), "gen": g, "contexte": ctx or tr("ui.ctx.none"), "faits": faits})
         db.close()
         return {"items": items[:40], "reste": reste, "valides": valides}
 
@@ -175,7 +194,7 @@ def make_handler(db_path, token, default_root, default_reader):
 
         def do_GET(self):
             if not self._ok():
-                return self._send(403, '{"erreur":"jeton invalide"}')
+                return self._send(403, json.dumps({"erreur": tr("ui.err.token")}, ensure_ascii=False))
             u = urlparse(self.path)
             if u.path == "/":
                 return self._send(200, static_page, "text/html; charset=utf-8")
@@ -193,7 +212,7 @@ def make_handler(db_path, token, default_root, default_reader):
         def do_POST(self):
             path = urlparse(self.path).path
             if not self._ok() or path not in ("/api/save", "/api/stop"):
-                return self._send(403, '{"erreur":"refusé"}')
+                return self._send(403, json.dumps({"erreur": tr("ui.err.refused")}, ensure_ascii=False))
             if path == "/api/stop":
                 self._send(200, '{"ok":true}')
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -209,9 +228,9 @@ def make_handler(db_path, token, default_root, default_reader):
 
 
 def main():
-    args = sys.argv[1:]
+    args = i18n.init(sys.argv[1:])
     if not args or args[0] in ("-h", "--help"):
-        print(__doc__)
+        print(tr("ui.help"))
         return 0 if args else 2
 
     def opt(name, default=None):
@@ -227,7 +246,7 @@ def main():
     token = secrets.token_urlsafe(16)
     server = ThreadingHTTPServer(("127.0.0.1", port), make_handler(db_path, token, root, reader))
     url = f"http://127.0.0.1:{port}/?t={token}" + (f"&racine={root}" if root else "")
-    print(f"Interface de validation : {url}\n(Ctrl+C pour arrêter ; les données restent sur ce poste.)", flush=True)
+    print(tr("ui.launch", url=url), flush=True)
     if "--no-browser" not in args:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

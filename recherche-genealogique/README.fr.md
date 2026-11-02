@@ -1,6 +1,6 @@
 # Recherche généalogique assistée
 
-English: [README.md](README.md) (version pour GitHub).
+English: [README.md](README.md) (version pour GitHub) · Deutsch : [README.de.md](README.de.md)
 
 Méthode et outils pour mener une enquête généalogique **avec ou sans IA** : sources nommées, niveaux de certitude (A acte lu · B notice ou arbre · C déduction), base locale, validation rapide des preuves, rapport PDF, sauvegarde et republication d'arbres (Geneanet et logiciels via GEDCOM).
 
@@ -33,6 +33,8 @@ python scripts/genealogie.py devolution arbre.db "Défunt" # héritiers possible
 python scripts/genealogie.py exporter arbre.db arbre_exporte.ged
 ```
 
+Langue des outils : `--lang fr|en|de`, ou la variable `GENEALOGIE_LANG`, ou la langue du système (français par défaut). Les noms de commandes et d'options restent des identifiants français, avec des alias anglais (`import`, `export`, `analyze`, `validate`, `report`, `inheritance` ; `--root`, `--reader`, `--death-year`, `--all`, `--title`).
+
 L'interface de validation s'ouvre sur votre poste uniquement (adresse locale protégée par un jeton) ; rien n'est envoyé en ligne. Le rapport PDF masque par défaut les personnes probablement vivantes.
 
 ## Sauvegarder un arbre Geneanet
@@ -41,9 +43,10 @@ La méthode officielle, pas à pas, est dans `references/arbres.md` : page « Ex
 
 ## Contenu
 
-- `SKILL.md`, `AGENTS.md`, `PROMPT-UNIVERSEL.md` (français), `PROMPT-UNIVERSAL.en.md` (anglais) : consignes pour un assistant.
+- `SKILL.md`, `AGENTS.md`, `PROMPT-UNIVERSEL.md` (français), `PROMPT-UNIVERSAL.en.md` (anglais), `PROMPT-UNIVERSAL.de.md` (allemand) : consignes pour un assistant.
 - `references/` : méthode, sources (France et international), sites utiles, demandes d'aide, arbres, tâche du jour, recherche d'héritiers.
-- `scripts/` : outils Python (bibliothèque standard).
+- `scripts/` : outils Python (bibliothèque standard) ; `scripts/locales/` : traductions (un fichier JSON par langue).
+- `TRANSLATING.md` : ajouter une langue.
 
 ## Licence
 
@@ -51,7 +54,7 @@ MIT (voir `LICENSE`) : vous pouvez utiliser, copier, modifier et redistribuer ce
 
 ## Limites
 
-- Les sources et exemples concernent surtout la France ; pour un autre pays, le modèle de preuves et les scripts restent valables, les sites sont à remplacer (`references/sources-international.md` donne des points d'entrée, non vérifiés). Les textes et les messages des scripts sont en français ; l'assistant répond dans la langue de l'utilisateur.
+- Les sources et exemples concernent surtout la France ; pour un autre pays, le modèle de preuves et les scripts restent valables, les sites sont à remplacer (`references/sources-international.md` donne des points d'entrée, non vérifiés). Les outils (messages, aide, interface de validation, rapport) parlent français, anglais et allemand (`--lang fr|en|de`, voir `TRANSLATING.md` pour en ajouter une) ; le guide (`SKILL.md` et `references/`) est en français et l'assistant répond dans la langue de l'utilisateur. Les valeurs stockées dans la base (types d'événements comme « naissance ») restent des identifiants français, affichés traduits à l'écran. Les textes anglais et allemands n'ont pas été relus par des locuteurs natifs : les corrections sont bienvenues.
 - La recherche d'héritiers est un guide de méthode et un outil indicatif, pas un avis juridique : un notaire valide la dévolution.
 - Aucun outil ne remplace la lecture des actes : les niveaux A ne s'obtiennent qu'en lisant le document.
 - Les adresses de sites changent ; chercher le nom du site si un lien ne répond plus.

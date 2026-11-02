@@ -1,6 +1,6 @@
 # Universal prompt: paste into any assistant
 
-Two versions: **full** (a GPT's instructions, a Gem, a project, a system message) and **short** (custom instructions with a size limit). Do not edit: copy the block between the `-----` lines. The French original is in `PROMPT-UNIVERSEL.md`.
+Two versions: **full** (a GPT's instructions, a Gem, a project, a system message) and **short** (custom instructions with a size limit). Do not edit: copy the block between the `-----` lines. The French original is in `PROMPT-UNIVERSEL.md`; a German version is in `PROMPT-UNIVERSAL.de.md`.
 
 ## Full version
 

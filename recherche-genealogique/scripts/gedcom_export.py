@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Exporte la base d'enquête en GEDCOM 5.5.1 (UTF-8), importable dans Geneanet, Heredis, Ancestris.
+"""Export the investigation database as GEDCOM 5.5.1 (UTF-8), importable into Geneanet, Heredis, Ancestris.
 
-Usage : python gedcom_export.py enquete.db arbre_exporte.ged
-Stdlib uniquement. Exporte personnes, événements et relations (époux, parent).
-Les niveaux de certitude A/B/C restent dans la base ; le GEDCOM ne les porte pas.
+Usage: python gedcom_export.py investigation.db tree_out.ged. Certainty levels A/B/C stay in the
+database; the GEDCOM does not carry them.
 """
 import sqlite3
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+import i18n  # noqa: E402
+from i18n import tr  # noqa: E402
 
 TAGS = {
     "naissance": "BIRT", "baptême": "CHR", "décès": "DEAT", "inhumation": "BURI",
@@ -40,10 +43,11 @@ def build_families(conn):
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        print(__doc__, file=sys.stderr)
+    args = i18n.init(sys.argv[1:])
+    if len(args) != 2:
+        print(tr("exp.help"), file=sys.stderr)
         return 2
-    db_path, out_path = Path(sys.argv[1]), Path(sys.argv[2])
+    db_path, out_path = Path(args[0]), Path(args[1])
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
 
@@ -102,7 +106,7 @@ def main() -> int:
 
     lines.append("0 TRLR")
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Exporté : {len(persons)} personnes, {len(fams)} familles -> {out_path}")
+    print(tr("exp.done", persons=len(persons), fams=len(fams), out=out_path))
     return 0
 
 

@@ -1,0 +1,18 @@
+# Données personnelles : arbre familial, sauvegardes, bases et rapports (personnes vivantes)
+sauvegardes/
+*.db
+*.ged
+*.gw
+
+# Résultats de tests générés
+recherche-genealogique-workspace/
+
+# Documents de tiers servant d'exemples (fil de discussion, réponse d'une IA)
+exemple.txt
+gemini.txt
+
+# Paquet généré (se reconstruit avec package_skill)
+*.skill
+
+__pycache__/
+*.pyc

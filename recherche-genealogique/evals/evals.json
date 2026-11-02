@@ -1,0 +1,26 @@
+{
+  "skill_name": "recherche-genealogique",
+  "evals": [
+    {
+      "id": 1,
+      "name": "fondateur-introuvable",
+      "prompt": "Pour une conférence sur l'industrie à Lyon-Gerland, je cherche ce qu'est devenu le fondateur de l'entreprise chimique Silvestre après sa reprise par Pechiney en 1931 : où et quand est-il mort, avec qui vivait-il ? Dis-moi aussi comment tu le sais.",
+      "expected_output": "Réponse sourcée avec niveaux de certitude ; ne donne pas un lieu de décès sans source ; trouve seul ou s'arrête proprement avec une demande d'aide précise.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "notable-moyen",
+      "prompt": "J'écris un article sur Gabriel Cordier, qui a dirigé la Compagnie des produits chimiques et électrométallurgiques d'Alais, Froges et Camargue jusqu'à sa mort en 1934. Je voudrais établir proprement son état civil : date et lieu de naissance, date et lieu de décès, nom de son épouse et de ses enfants. Donne-moi ce que tu peux prouver et dis-moi ce qui reste à vérifier.",
+      "expected_output": "Faits distingués par niveau de certitude, sources nommées, homonymes écartés, pistes pour la suite (conjoint, presse, Léonore).",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "ancetre-ordinaire",
+      "prompt": "Mon arrière-arrière-grand-père s'appelait Jean Marie Pivot, né vers 1820 à Saint-Laurent-d'Oingt (Rhône), cultivateur, marié à une Benoîte Chermette. Je ne sais pas où et quand il est mort. Peux-tu le retrouver ? Mon épouse a un compte Geneanet mais je ne sais pas si ça sert ici.",
+      "expected_output": "N'invente aucune date ni aucun lieu ; consigne les recherches faites et leurs échecs ; formule une demande d'aide précise (Geneanet connecté, registres AD69, tables décennales) ; reste honnête sur ce qui n'est pas accessible.",
+      "files": []
+    }
+  ]
+}

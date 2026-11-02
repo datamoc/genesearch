@@ -1,6 +1,7 @@
 ---
 name: recherche-genealogique
 description: Mène une enquête généalogique ou biographique sur une personne (ancêtre, notable, disparu) en croisant état civil, recensements, hypothèques, presse, Léonore, Geneanet, Gallica, archives, et demande l'aide de l'humain pour les lectures d'images difficiles. À utiliser dès que l'utilisateur cherche la date ou le lieu de décès, la famille, le conjoint, les enfants ou le parcours d'une personne, veut remonter une ascendance, retrouver quelqu'un « introuvable », vérifier une notice, ou parle d'archives, d'actes, de recensements, de Geneanet, de Filae, de généalogie, d'arbre généalogique, de GEDCOM, ou veut sauvegarder, exporter ou reconstituer un arbre, avancer sur sa généalogie (« on fait quoi aujourd'hui ? »), prouver des faits, remonter une branche, trouver des personnes manquantes, repérer des corrélations de métiers ou de lieux, estimer la parenté de deux personnes, rechercher des héritiers (succession, dévolution). Aussi quand une réponse d'IA sur une personne historique semble trop belle ou non sourcée.
+license: MIT
 compatibility: Fonctionne avec tout assistant IA (conversation seule, document partagé, poste de travail). Facultatif - navigateur piloté, exécution de Python 3.8+ (scripts à bibliothèque standard, reportlab pour le PDF).
 ---
 

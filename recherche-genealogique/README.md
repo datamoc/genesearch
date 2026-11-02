@@ -43,6 +43,10 @@ La méthode officielle, pas à pas, est dans `references/arbres.md` : page « Ex
 - `references/` : méthode, sources, sites utiles, demandes d'aide, arbres, tâche du jour, recherche d'héritiers.
 - `scripts/` : outils Python (bibliothèque standard).
 
+## Licence
+
+MIT (voir `LICENSE`) : vous pouvez utiliser, copier, modifier et redistribuer ce dossier, y compris à titre commercial, en conservant la mention de copyright. Le logiciel est fourni sans garantie. Les guides juridiques (recherche d'héritiers) ne sont pas un avis juridique.
+
 ## Limites
 
 - Les sources et exemples concernent surtout la France ; pour un autre pays, le modèle de preuves et les scripts restent valables, les sites sont à remplacer.

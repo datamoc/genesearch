@@ -6,14 +6,18 @@ Usage : python rapport_preuves.py <base.db> <sortie.pdf> [--titre "…"] [--tout
 Contenu : preuves (niveau A), faits incertains (C et douteux), pistes encore non prouvées (journal
 de recherche), questions ouvertes (aides demandées, incohérences), légende des niveaux.
 
-Vie privée : par défaut, les personnes probablement vivantes (née il y a moins de 100 ans, sans décès connu)
-sont remplacées par « [personne vivante] » dans tout le document. `--tout` désactive ce masquage
+Vie privée : par défaut, les personnes probablement vivantes sont exclues du document : née il y a moins de
+100 ans sans décès connu, ou sans aucune date mais parent, enfant ou conjoint d'une telle personne. Toute ligne
+(preuve, journal, question, incohérence) qui nomme une de ces personnes, sous une forme ou une autre (casse,
+accents, ordre prénom-nom), est retirée et simplement comptée. Le masquage est volontairement prudent : un
+homonyme historique peut être retiré aussi. `--tout` désactive ce masquage
 (document à garder en local). PDF : bibliothèque `reportlab` (pip install reportlab) ; sans elle, ou avec
 `--html`, le script écrit une page HTML imprimable en PDF depuis un navigateur.
 """
 import html
 import re
 import sys
+import unicodedata
 from datetime import date
 from pathlib import Path
 
@@ -24,42 +28,71 @@ LEVELS = [("A", "acte lu (par la personne indiquée)"), ("B", "notice, arbre ou 
           ("C", "déduction ou lecture incertaine"), ("B−", "extrait de moteur, page non lue")]
 
 
+def fold(text):
+    """Minuscules sans accents, pour comparer des noms sans tenir compte de la casse ni des accents."""
+    decomposed = unicodedata.normalize("NFD", text or "")
+    return "".join(c for c in decomposed if unicodedata.category(c) != "Mn").lower()
+
+
+def living_people(tree, current_year):
+    """Personnes probablement vivantes : voir la docstring du module."""
+    living = {pid for pid in tree.people
+              if tree.birth_year(pid) and current_year - tree.birth_year(pid) < 100 and not tree.death_year(pid)}
+    undated = {pid for pid in tree.people
+               if not tree.birth_year(pid) and not tree.death_year(pid)
+               and (tree.parents[pid] | tree.children[pid] | tree.spouses[pid]) & living}
+    return living | undated
+
+
+def name_pattern(tree, people):
+    """Expression qui reconnaît les noms de `people` : « Prénom NOM » et « NOM Prénom », sans casse ni accents."""
+    forms = set()
+    for pid in people:
+        person = tree.people[pid]
+        given, surname = (person["given_names"] or "").strip(), (person["surname"] or "").strip()
+        forms.add(person["full_name"])
+        if given and surname:
+            forms |= {f"{given} {surname}", f"{surname} {given}"}
+    forms = sorted({fold(f) for f in forms if len(f) > 4}, key=len, reverse=True)
+    return re.compile("|".join(re.escape(f) for f in forms)) if forms else None
+
+
 def collect(db_path, mask):
     tree = Tree(db_path)
     db = tree.db
-    today = date.today().year
-    living = set()
-    if mask:
-        for pid in tree.people:
-            by = tree.birth_year(pid)
-            if by and today - by < 100 and not tree.death_year(pid):
-                living.add(pid)
-    names = sorted({tree.name(p) for p in living if len(tree.name(p)) > 4}, key=len, reverse=True)
-    pattern = re.compile("|".join(re.escape(n) for n in names)) if names else None
+    living = living_people(tree, date.today().year) if mask else set()
+    pattern = name_pattern(tree, living)
 
-    def m(text):
-        return pattern.sub("[personne vivante]", text) if (pattern and text) else (text or "")
+    def mentions_living(*texts):
+        return bool(pattern) and any(pattern.search(fold(t)) for t in texts if t)
 
-    ev = db.execute("""SELECT v.certainty, v.claim, v.reader, v.notes, s.label sl, s.reference sr, s.url su
-                       FROM evidence v LEFT JOIN sources s ON s.id=v.source_id
-                       WHERE v.certainty IN ('A','C') OR v.notes LIKE '[revu%'
-                       ORDER BY v.certainty, v.id""").fetchall()
-    # Un fait qui nomme une personne vivante est retiré (date et lieu suffiraient à la reconnaître) et compté.
-    hidden = [r for r in ev if pattern and (pattern.search(r["claim"] or "") or pattern.search(r["notes"] or ""))]
-    ev = [r for r in ev if r not in hidden]
+    def visible(rows, *fields):
+        """Sépare les lignes qui nomment une personne vivante des autres."""
+        shown = [r for r in rows if not mentions_living(*(r[f] for f in fields))]
+        return shown, len(rows) - len(shown)
+
+    evidence = db.execute("""SELECT v.certainty, v.claim, v.reader, v.notes, s.label sl, s.reference sr, s.url su
+                             FROM evidence v LEFT JOIN sources s ON s.id=v.source_id
+                             WHERE v.certainty IN ('A','C') OR v.notes LIKE '[revu%'
+                             ORDER BY v.certainty, v.id""").fetchall()
     log = db.execute("SELECT * FROM research_log ORDER BY id").fetchall()
     helps = db.execute("SELECT * FROM help_requests ORDER BY status DESC, id").fetchall()
-    anomalies = quiet(cmd_anomalies, tree)
-    anom = [f"{tree.label(pid)} : {msg}" for _, pid, msg in anomalies[:12]]
+    evidence, hidden_evidence = visible(evidence, "claim", "notes", "reader")
+    log, hidden_log = visible(log, "query", "result", "next_step")
+    helps, hidden_helps = visible(helps, "request", "answer")
+    anomalies = [f"{tree.label(pid)} : {msg}" for _, pid, msg in quiet(cmd_anomalies, tree)[:12]]
+    shown_anomalies = [a for a in anomalies if not mentions_living(a)]
     return {
-        "preuves": [dict(certainty=r["certainty"], claim=m(r["claim"]), reader=m(r["reader"] or ""),
-                         notes=m(r["notes"] or ""), source=m(r["sl"] or ""), ref=r["sr"] or "", url=r["su"] or "")
-                    for r in ev],
-        "journal": [dict(base=r["base"], query=m(r["query"]), period=r["period"] or "", result=m(r["result"]),
-                         next=m(r["next_step"] or ""), on=r["searched_on"] or "") for r in log],
-        "aides": [dict(request=m(r["request"]), status=r["status"], answer=m(r["answer"] or "")) for r in helps],
-        "anomalies": [m(a) for a in anom],
-        "n_personnes": len(tree.people), "n_masquees": len(living), "n_faits_masques": len(hidden),
+        "preuves": [dict(certainty=r["certainty"], claim=r["claim"], reader=r["reader"] or "",
+                         notes=r["notes"] or "", source=r["sl"] or "", ref=r["sr"] or "", url=r["su"] or "")
+                    for r in evidence],
+        "journal": [dict(base=r["base"], query=r["query"], period=r["period"] or "", result=r["result"],
+                         next=r["next_step"] or "", on=r["searched_on"] or "") for r in log],
+        "aides": [dict(request=r["request"], status=r["status"], answer=r["answer"] or "") for r in helps],
+        "anomalies": shown_anomalies,
+        "masques": {"preuves": hidden_evidence, "journal": hidden_log, "aides": hidden_helps,
+                    "anomalies": len(anomalies) - len(shown_anomalies)},
+        "n_personnes": len(tree.people), "n_masquees": len(living),
         "niveaux": dict(db.execute("SELECT certainty, COUNT(*) FROM evidence GROUP BY certainty").fetchall()),
     }
 
@@ -70,26 +103,30 @@ def sections(d):
     C = [p for p in d["preuves"] if p["certainty"] == "C"]
     out = []
     out.append(("Légende des niveaux de certitude", [("t", [["Niveau", "Signification"]] + [[k, v] for k, v in LEVELS])]))
-    hidden_note = ([("p", f"{d['n_faits_masques']} fait(s) concernant des personnes vivantes ne sont pas détaillés dans ce document.")]
-                   if d["n_faits_masques"] else [])
+    def hidden_note(kind, label):
+        count = d["masques"][kind]
+        return [("p", f"Non détaillé : {count} {label} nommant des personnes vivantes.")] if count else []
+
     out.append(("Preuves : faits établis par un acte (niveau A)", ([(
         "t", [["Fait", "Source", "Lecteur et notes"]] +
         [[p["claim"], " ".join(x for x in (p["source"], p["ref"]) if x),
           " ".join(x for x in (p["reader"], p["notes"]) if x)] for p in A])] if A else [("p", "Aucune preuve de niveau A pour l'instant.")])
-        + hidden_note))
+        + hidden_note("preuves", "fait(s)")))
     out.append(("Faits incertains (niveau C, lectures douteuses)", [(
         "t", [["Fait", "Source", "Pourquoi incertain"]] +
         [[p["claim"], p["source"], p["notes"]] for p in C])] if C else [("p", "Aucun.")]))
     out.append(("Pistes trouvées, non encore prouvées (journal de recherche)",
-                [("t", [["Recherche", "Résultat", "Suite à donner"]] +
-                  [[f"{j['on']} · {j['base']} · {j['query']}", j["result"], j["next"]] for j in d["journal"]])]
-                if d["journal"] else [("p", "Journal vide.")]))
+                ([("t", [["Recherche", "Résultat", "Suite à donner"]] +
+                   [[f"{j['on']} · {j['base']} · {j['query']}", j["result"], j["next"]] for j in d["journal"]])]
+                 if d["journal"] else [("p", "Journal vide.")]) + hidden_note("journal", "entrée(s) du journal")))
     open_help = [a for a in d["aides"] if a["status"] == "ouverte"]
     qs = [["Question ou demande d'aide", "Statut"]] + [[a["request"], a["status"]] for a in d["aides"]]
     blocks = [("t", qs)] if d["aides"] else [("p", "Aucune demande d'aide enregistrée.")]
+    blocks += hidden_note("aides", "question(s)")
     if d["anomalies"]:
         blocks += [("p", "Incohérences repérées dans l'arbre, à vérifier dans les actes :"),
                    ("t", [["Incohérence"]] + [[a] for a in d["anomalies"]])]
+    blocks += hidden_note("anomalies", "incohérence(s)")
     out.append((f"Questions ouvertes ({len(open_help)} demande(s) d'aide en attente)", blocks))
     return out
 

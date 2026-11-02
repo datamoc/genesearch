@@ -77,9 +77,9 @@ def collect(db_path, mask):
                              ORDER BY v.certainty, v.id""").fetchall()
     log = db.execute("SELECT * FROM research_log ORDER BY id").fetchall()
     helps = db.execute("SELECT * FROM help_requests ORDER BY status DESC, id").fetchall()
-    evidence, hidden_evidence = visible(evidence, "claim", "notes", "reader")
-    log, hidden_log = visible(log, "query", "result", "next_step")
-    helps, hidden_helps = visible(helps, "request", "answer")
+    evidence, hidden_evidence = visible(evidence, "claim", "notes", "reader", "sl", "sr", "su")
+    log, hidden_log = visible(log, "base", "query", "period", "result", "next_step", "searched_on")
+    helps, hidden_helps = visible(helps, "request", "answer", "status")
     anomalies = [f"{tree.label(pid)} : {msg}" for _, pid, msg in quiet(cmd_anomalies, tree)[:12]]
     shown_anomalies = [a for a in anomalies if not mentions_living(a)]
     return {

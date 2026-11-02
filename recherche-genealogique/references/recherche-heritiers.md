@@ -2,7 +2,7 @@
 
 Table des matières : 1. Cadre et garde-fous · 2. Les principes restent les mêmes · 3. Méthode · 4. Dévolution légale, résumé · 5. Sources selon leur accessibilité · 6. Contacter un héritier · 7. Arnaques et vérifications · 8. Cas particuliers · 9. Livrables et outils
 
-Ce guide décrit une démarche et ne constitue pas un conseil juridique. Les règles (état civil, RGPD, profession de généalogiste successoral, droit des successions) changent et dépendent de la date du décès et du pays : à faire confirmer par le notaire chargé de la succession. Les points marqués « à vérifier » le sont particulièrement.
+Ce guide décrit une démarche et ne constitue pas un conseil juridique. Les règles (état civil, RGPD, profession de généalogiste successoral, droit des successions) changent et dépendent de la date du décès et du pays : à faire confirmer par le notaire chargé de la succession. Les points marqués « à vérifier » le sont particulièrement. **Ce guide décrit le droit français** (Code civil, notaires, RGPD) : pour une succession dans un autre pays, garde la méthode (preuves, protection des données, contact par un professionnel local) mais pas l'ordre légal des héritiers ni les règles de procédure.
 
 ## 1. Cadre et garde-fous
 

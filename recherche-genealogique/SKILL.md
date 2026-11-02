@@ -1,6 +1,6 @@
 ---
 name: recherche-genealogique
-description: Mène une enquête généalogique ou biographique sur une personne (ancêtre, notable, disparu) en croisant état civil, recensements, hypothèques, presse, Léonore, Geneanet, Gallica, archives, et demande l'aide de l'humain pour les lectures d'images difficiles. À utiliser dès que l'utilisateur cherche la date ou le lieu de décès, la famille, le conjoint, les enfants ou le parcours d'une personne, veut remonter une ascendance, retrouver quelqu'un « introuvable », vérifier une notice, ou parle d'archives, d'actes, de recensements, de Geneanet, de Filae, de généalogie, d'arbre généalogique, de GEDCOM, ou veut sauvegarder, exporter ou reconstituer un arbre, avancer sur sa généalogie (« on fait quoi aujourd'hui ? »), prouver des faits, remonter une branche, trouver des personnes manquantes, repérer des corrélations de métiers ou de lieux, estimer la parenté de deux personnes, rechercher des héritiers (succession, dévolution). Aussi quand une réponse d'IA sur une personne historique semble trop belle ou non sourcée.
+description: Genealogy and family-history research with proof levels (A record read, B notice or tree, C deduction), named sources and human help for hard-to-read records. Use when the user researches ancestors, a person's death, spouse or children, verifies a record or an AI answer that looks unsourced, backs up, imports or rebuilds a family tree (Geneanet, GEDCOM), asks "what do we do today?", wants to prove facts, go back a branch, find missing people, spot patterns in occupations or places, estimate kinship, or look for the heirs of an estate. / Enquête généalogique (état civil, actes, recensements, hypothèques, presse, Léonore, Geneanet, Gallica, archives, arbre, GEDCOM, sauvegarde, preuves, parenté, recherche d'héritiers, succession, dévolution). Répondre dans la langue de l'utilisateur.
 license: MIT
 compatibility: Fonctionne avec tout assistant IA (conversation seule, document partagé, poste de travail). Facultatif - navigateur piloté, exécution de Python 3.8+ (scripts à bibliothèque standard, reportlab pour le PDF).
 ---
@@ -8,6 +8,12 @@ compatibility: Fonctionne avec tout assistant IA (conversation seule, document p
 # Recherche généalogique assistée
 
 Tu travailles avec un humain. Tu vas aussi loin que tu peux seul, puis tu demandes de l'aide de façon précise (lecture d'un acte manuscrit, connexion à un compte payant, image non indexée). Une enquête généalogique est une chaîne de pistes : la plupart échouent, et ce sont ces échecs qui orientent la suite. Un résultat faux mais plausible est pire qu'un « pas trouvé ».
+
+## Langue / Language
+
+Réponds dans **la langue de l'utilisateur**, quelle que soit celle de ces fichiers. Les références sont en français, sauf `references/sources-international.md` (anglais). Les actes restent dans leur langue d'origine : cite-les tels quels et traduis pour l'utilisateur. Hors de France, applique les mêmes règles de preuve avec les sources du pays concerné (`references/sources-international.md`) ; les règles juridiques sur les héritiers sont françaises, ne les applique pas à un autre pays.
+
+Always answer in the user's language, whatever the language of these files. Quote records in their original language and translate them.
 
 ## Règles qui comptent
 
@@ -51,7 +57,7 @@ En fin de séance : consigne tout, puis propose un **rapport** (`genealogie.py r
 
 **Arbres** : sauvegarder un arbre en ligne (Geneanet), le garder en local, y reporter les faits prouvés, le republier : `references/arbres.md`. Utilise l'export que le site propose avant de lire ses pages une à une, demande l'accord avant tout téléchargement, et fais une sauvegarde avant toute mise à jour en ligne.
 
-Où chercher, par période et par lieu (Paris et ses particularités, Rhône, Léonore, Gallica, MatchID, etc.) : `references/sources-france.md`. Liste des sites et de leurs limites (Geneanet, FamilySearch, archives, presse, cartes, Allemagne et Alsace-Moselle) : `references/sites-utiles.md`.
+Où chercher, par période et par lieu (Paris et ses particularités, Rhône, Léonore, Gallica, MatchID, etc.) : `references/sources-france.md`. Liste des sites et de leurs limites (Geneanet, FamilySearch, archives, presse, cartes, Allemagne et Alsace-Moselle) : `references/sites-utiles.md`. **Hors de France** : `references/sources-international.md` (points d'entrée par pays, à vérifier, et méthode d'adaptation à un nouveau pays).
 
 ## Outils et limites
 

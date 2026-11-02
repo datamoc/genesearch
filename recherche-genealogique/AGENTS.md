@@ -1,12 +1,14 @@
 # Recherche généalogique assistée : consignes pour un assistant IA
 
-Ce dossier contient une méthode de recherche généalogique et des outils. Il fonctionne avec n'importe quel assistant IA (Claude, ChatGPT, Gemini, Copilot, Mistral, modèle local, agent de code) ; il suffit de lire les fichiers ci-dessous. Si ton outil lit un fichier `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` ou le format `SKILL.md`, ce dossier est déjà au bon format ; sinon, copie le contenu de `PROMPT-UNIVERSEL.md` dans les instructions de l'assistant.
+Ce dossier contient une méthode de recherche généalogique et des outils. Il fonctionne avec n'importe quel assistant IA (Claude, ChatGPT, Gemini, Copilot, Mistral, modèle local, agent de code) ; il suffit de lire les fichiers ci-dessous. Si ton outil lit un fichier `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` ou le format `SKILL.md`, ce dossier est déjà au bon format ; sinon, copie le contenu de `PROMPT-UNIVERSEL.md` (français) ou `PROMPT-UNIVERSAL.en.md` (anglais) dans les instructions de l'assistant.
+
+**Language:** always answer in the user's language. The references are in French except `references/sources-international.md` (English: entry points for other countries). Quote records in their original language and translate them.
 
 ## Lis dans cet ordre
 
 1. `SKILL.md` : les règles (sources et niveaux de certitude A/B/C, recopier sans recomposer, accord avant d'agir), le démarrage de session, la boucle de travail, la tâche du jour.
 2. `references/environnements.md` : ce que tu peux faire selon tes capacités (conversation seule, document partagé, poste de travail, cloud).
-3. À la demande : `references/methode.md` (pivots quand une personne « disparaît »), `references/sources-france.md` et `references/sites-utiles.md` (où chercher), `references/demande-aide.md` (demander une lecture à l'humain), `references/arbres.md` (sauvegarder, importer, republier un arbre), `references/tache-du-jour.md` (analyses, validation, rapport), `references/recherche-heritiers.md` (recherche d'héritiers : cadre, méthode, dévolution, garde-fous).
+3. À la demande : `references/methode.md` (pivots quand une personne « disparaît »), `references/sources-france.md` et `references/sites-utiles.md` (où chercher), `references/demande-aide.md` (demander une lecture à l'humain), `references/arbres.md` (sauvegarder, importer, republier un arbre), `references/tache-du-jour.md` (analyses, validation, rapport), `references/recherche-heritiers.md` (recherche d'héritiers : cadre, méthode, dévolution, garde-fous ; droit français), `references/sources-international.md` (hors de France).
 
 ## Règles non négociables
 

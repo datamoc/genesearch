@@ -1,55 +1,76 @@
-# Recherche généalogique assistée / Assisted genealogy research
+# Assisted genealogy research (`recherche-genealogique`)
 
-Méthode et outils pour mener une enquête généalogique **avec ou sans IA** : sources nommées, niveaux de certitude (A acte lu · B notice ou arbre · C déduction), base locale, validation rapide des preuves, rapport PDF, sauvegarde et republication d'arbres (Geneanet et logiciels via GEDCOM).
+A method and a toolkit for genealogy research **with or without an AI assistant**: named sources, levels of certainty (A = record read, B = notice or tree, C = deduction), a local evidence database, fast validation of proofs, PDF reports, tree backup and republication (Geneanet, GEDCOM, Geneweb), and help with **heir research**.
 
-*Method and tools for genealogy research, with or without an AI assistant. The guide is written in French for French and Alsace-Moselle sources; the scripts and the evidence model work for any country.*
+Français : [README.fr.md](README.fr.md).
 
-## Avec un assistant IA
+> **Language.** Assistants should **answer in the user's language**, whatever the language of these files. The guide itself is written in French (the author's family research is French); the page [`references/sources-international.md`](references/sources-international.md) is in English and lists entry points for many countries. Records stay in their original language: quote them as written and translate for the user.
 
-| Votre outil | Comment l'utiliser |
+## What it does
+
+- **Evidence discipline.** Every fact carries a named source and a level: **A** record read (by the assistant or the human), **B** notice, online tree or transcription with no record seen, **C** deduction or uncertain reading. Copy dates and places from the source, never reconstruct them. Mirrored sources (Wikipedia/Wikidata, copied trees) count as one.
+- **Human in the loop.** The assistant goes as far as it can, then asks for a precise favour: read a handwritten line, log in to a paid account, open a database that can only be browsed by hand.
+- **Research method.** Identify the person first; pivots when someone "disappears" (spouse by maiden name, children and in-laws, property, employer, press, census, spelling variants); how to read an archive record; where to look, by country.
+- **Tools** (Python standard library, no mandatory install): local SQLite evidence database, GEDCOM import and export, analysis (task of the day, kinship, anomalies, missing people, correlations), a local validation interface, a PDF report that hides living people, and an indicative legal **devolution** for French successions.
+- **Tree backup.** The official Geneanet export step by step (GEDCOM and Geneweb formats), import into the local database, safe republication.
+- **Heir research.** Guardrails (legitimate purpose, GDPR), method, sources by accessibility, a sober letter template, inheritance scams. **French law only.**
+
+## Use it with an AI assistant
+
+| Your tool | How |
 |---|---|
-| Un assistant qui lit le format `SKILL.md` (par exemple Claude Code et d'autres assistants de code) | Copier ce dossier dans le dossier des skills de l'outil (voir sa documentation pour l'emplacement) |
-| Un assistant qui lit `AGENTS.md` | Garder ce dossier dans le projet : `AGENTS.md` renvoie vers les autres fichiers |
-| ChatGPT, Gemini, Mistral, Copilot ou un modèle local, en conversation | Coller `PROMPT-UNIVERSEL.md` (version complète ou version courte) dans les instructions personnalisées, un GPT, un Gem ou le message système |
-| Claude.ai | Importer le paquet `.skill` (Paramètres, capacités) |
+| An assistant that reads the `SKILL.md` format (Claude Code and other coding assistants) | Copy this folder into the tool's skills folder (see its documentation for the location) |
+| An assistant that reads `AGENTS.md` | Keep this folder in the project: `AGENTS.md` points to the other files |
+| ChatGPT, Gemini, Mistral, Copilot, a local model (chat only) | Paste one of the prompts of [`PROMPT-UNIVERSAL.en.md`](PROMPT-UNIVERSAL.en.md) (full or short) into custom instructions, a GPT, a Gem or the system message |
+| Claude.ai | Import the `.skill` package (Settings, capabilities) |
 
-Ce que l'assistant peut faire dépend de ses capacités : conversation seule, document partagé, ou poste de travail avec exécution de commandes. Il s'adapte (`references/environnements.md`).
+What the assistant can do depends on its abilities (text only, shared document, or a workstation that runs commands). It adapts: see [`references/environnements.md`](references/environnements.md). Nothing requires a script.
 
-## Sans IA : les scripts seuls
+## Use it without AI: the scripts
 
-Prérequis : Python 3.8 ou plus récent (testé avec 3.13). Aucune installation, sauf `pip install reportlab` si vous voulez le PDF.
+Python 3.8 or later (tested with 3.13). PDF reports need `pip install reportlab`; everything else is standard library.
 
 ```
-python scripts/genealogie.py init arbre.db                      # crée la base
-python scripts/genealogie.py importer mon_arbre.ged arbre.db    # charge un export GEDCOM
-python scripts/genealogie.py analyse arbre.db stats             # état de l'arbre
-python scripts/genealogie.py analyse arbre.db tache --racine "Prénom NOM"   # tâche du jour
-python scripts/genealogie.py analyse arbre.db parente "A" "B"   # lien de parenté entre deux personnes
-python scripts/genealogie.py valider arbre.db --racine "Prénom NOM" --lecteur "Votre prénom"   # validation des preuves dans le navigateur
-python scripts/genealogie.py rapport arbre.db rapport.pdf       # PDF des preuves et des questions ouvertes
-python scripts/genealogie.py devolution arbre.db "Défunt" # héritiers possibles par ordre (droit français, indicatif)
-python scripts/genealogie.py exporter arbre.db arbre_exporte.ged
+python scripts/genealogie.py init tree.db                         # create the database
+python scripts/genealogie.py importer my_tree.ged tree.db         # load a GEDCOM export
+python scripts/genealogie.py analyse tree.db stats                # state of the tree
+python scripts/genealogie.py analyse tree.db tache --racine "First LAST"      # task of the day
+python scripts/genealogie.py analyse tree.db parente "A" "B"      # kinship between two people
+python scripts/genealogie.py valider tree.db --racine "First LAST" --lecteur "Your name"   # validate proofs in the browser
+python scripts/genealogie.py rapport tree.db report.pdf           # proofs and open questions (living people hidden)
+python scripts/genealogie.py devolution tree.db "Deceased"        # possible heirs by order (French law, indicative)
+python scripts/genealogie.py exporter tree.db tree_out.ged
 ```
 
-L'interface de validation s'ouvre sur votre poste uniquement (adresse locale protégée par un jeton) ; rien n'est envoyé en ligne. Le rapport PDF masque par défaut les personnes probablement vivantes.
+The validation interface only listens on your machine (local address protected by a token); nothing is sent online. The command names and the on-screen text are in French for now (see Limits).
 
-## Sauvegarder un arbre Geneanet
+## Privacy
 
-La méthode officielle, pas à pas, est dans `references/arbres.md` : page « Exports et sauvegardes » de l'arbre, formats GEDCOM (échange) et Geneweb (le plus fidèle, garde les sources). Le GEDCOM ne contient pas les photos.
+Trees contain living people. Keep the files local. The report hides everyone who is probably alive (born less than 100 years ago with no recorded death, or undated and linked to such a person) and removes every line that names them. This is deliberately cautious and works on names: review a report before sharing it. The repository's `.gitignore` keeps backups, databases and reports out of version control; keep it that way.
 
-## Contenu
+## Contents
 
-- `SKILL.md`, `AGENTS.md`, `PROMPT-UNIVERSEL.md` : consignes pour un assistant.
-- `references/` : méthode, sources, sites utiles, demandes d'aide, arbres, tâche du jour, recherche d'héritiers.
-- `scripts/` : outils Python (bibliothèque standard).
+- `SKILL.md`, `AGENTS.md`, `PROMPT-UNIVERSAL.en.md`, `PROMPT-UNIVERSEL.md`: instructions for an assistant.
+- `references/`: method, sources (France and international), useful sites, asking the human for help, trees, task of the day, heir research.
+- `scripts/`: the Python tools.
+
+## Limits
+
+- **Language.** Instructions and on-screen text are in French. The data vocabulary stored in the database (event kinds such as "naissance", "décès") and the script messages are French; GEDCOM tags are mapped to them on import. Full translation of the tools is not done yet.
+- **Tested only on French research** (a French family tree, Geneanet, French and Cantal archives). Entry points for other countries are collected from other open projects and **not verified**.
+- Heir research is a method guide and an indicative tool, **not legal advice**: a notary validates any devolution. Points marked "à vérifier" in the guide were written from memory.
+- No tool replaces reading the records: level A is only reached by reading the document.
+- Websites change. If a link fails, search the site's name.
+
+## Related open projects
+
+Independent projects found while building this one (no code copied). Some of their sources are listed in [`references/sources-international.md`](references/sources-international.md).
+
+- [autoresearch-genealogy](https://github.com/mattprusak/autoresearch-genealogy) (MIT): prompts and 24 country guides.
+- [Genealogy Research Agent](https://gist.github.com/peas/ee5b0bcdb54a809b6ddee83caff51ca6): a Claude Code skill with a Brazilian focus (no licence stated).
+- [gramps-evidence-mcp](https://github.com/ianderso/gramps-evidence-mcp) (MIT): an MCP server on Gramps Web with mandatory citations and confidence levels.
+- GEDCOM MCP servers such as [gedcom-mcp](https://glama.ai/mcp/servers/ggoosen/gedcom-mcp/tree) and Gramps tools.
 
 ## Licence
 
-MIT (voir `LICENSE`) : vous pouvez utiliser, copier, modifier et redistribuer ce dossier, y compris à titre commercial, en conservant la mention de copyright. Le logiciel est fourni sans garantie. Les guides juridiques (recherche d'héritiers) ne sont pas un avis juridique.
-
-## Limites
-
-- Les sources et exemples concernent surtout la France ; pour un autre pays, le modèle de preuves et les scripts restent valables, les sites sont à remplacer.
-- La recherche d'héritiers est un guide de méthode et un outil indicatif, pas un avis juridique : un notaire valide la dévolution.
-- Aucun outil ne remplace la lecture des actes : les niveaux A ne s'obtiennent qu'en lisant le document.
-- Les adresses de sites changent ; chercher le nom du site si un lien ne répond plus.
+MIT (see [LICENSE](LICENSE)): use, copy, modify and redistribute, including commercially, keeping the copyright notice. Provided without warranty.
